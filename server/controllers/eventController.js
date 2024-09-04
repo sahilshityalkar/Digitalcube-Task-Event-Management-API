@@ -54,4 +54,19 @@ const getAllEvents = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getAllEvents };
+// Controller function to retrieve an event by ID
+const getEventById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        res.status(200).json(event);
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred while retrieving the event' });
+    }
+};
+
+module.exports = { createEvent, getAllEvents, getEventById };
