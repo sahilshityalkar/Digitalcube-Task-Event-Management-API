@@ -27,6 +27,10 @@ const eventSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    imageUrl: {
+        type: String, // URL of the uploaded image
+        default: null
+    }
 });
 
 const Event = mongoose.model('Event', eventSchema);
