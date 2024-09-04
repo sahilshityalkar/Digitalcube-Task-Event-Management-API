@@ -1,13 +1,22 @@
 const Event = require('../models/eventModel');
+const Registration = require('../models/registrationModel');
 const Joi = require('joi');
+const nodemailer = require('nodemailer');
 
-// Define the validation schema using Joi for updates
+// Define the validation schema using Joi for event creation
+const eventSchema = Joi.object({
+    name: Joi.string().min(3).max(255).required(),
+    description: Joi.string().min(10).max(1024).required(),
+    date: Joi.date().greater('now').required(),
+    location: Joi.string().min(3).max(255).required(),
+});
+
+// Define the validation schema using Joi for event updates
 const updateEventSchema = Joi.object({
     name: Joi.string().min(3).max(255),
     description: Joi.string().min(10).max(1024),
     date: Joi.date().greater('now'),
     location: Joi.string().min(3).max(255),
-    // imageUrl is handled separately
 });
 
 // Controller function to create a new event
@@ -20,7 +29,7 @@ const createEvent = async (req, res) => {
     try {
         const newEvent = new Event({
             ...req.body,
-            imageUrl: req.file ? req.file.path : undefined // Add imageUrl if file is uploaded
+            imageUrl: req.file ? req.file.path : undefined
         });
         await newEvent.save();
 
@@ -80,7 +89,7 @@ const updateEventById = async (req, res) => {
     try {
         const updatedEventData = {
             ...req.body,
-            imageUrl: req.file ? req.file.path : undefined // Update imageUrl if a new file is uploaded
+            imageUrl: req.file ? req.file.path : undefined
         };
 
         const updatedEvent = await Event.findByIdAndUpdate(id, updatedEventData, { new: true, runValidators: true });
@@ -118,4 +127,63 @@ const deleteEventById = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getAllEvents, getEventById, updateEventById, deleteEventById };
+// Controller function to register a user for an event and send a confirmation email
+const registerForEvent = async (req, res) => {
+    const { id } = req.params;
+    const { name, email } = req.body;
+
+    // Basic validation
+    if (!name || !email) {
+        return res.status(400).json({ error: 'Name and email are required.' });
+    }
+
+    try {
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Ensure no more than 15 bookings for secure server, this is optional
+        const registrationCount = await Registration.countDocuments({ eventId: id });
+        if (registrationCount >= 15) {
+            return res.status(400).json({ error: 'Event is fully booked.' });
+        }
+
+        const newRegistration = new Registration({
+            eventId: id,
+            name,
+            email
+        });
+
+        await newRegistration.save();
+
+        // Setup Nodemailer transport with Ethereal
+        let transporter = nodemailer.createTransport({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            auth: {
+                user: process.env.ETHEREAL_USER,
+                pass: process.env.ETHEREAL_PASS  
+            }
+        });
+
+        // Send confirmation email
+        let info = await transporter.sendMail({
+            from: '"Event Management" <noreply@events.com>',
+            to: email,
+            subject: 'Registration Confirmation',
+            text: `Hi ${name},\n\nYou have successfully registered for the event: ${event.name}.\n\nThank you!`,
+            html: `<p>Hi ${name},</p><p>You have successfully registered for the event: <strong>${event.name}</strong>.</p><p>Thank you!</p>`
+        });
+
+        res.status(200).json({
+            message: 'Registration successful, confirmation email sent.',
+            registration: newRegistration,
+            emailInfo: info
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred while registering for the event.' });
+    }
+};
+
+module.exports = { createEvent, getAllEvents, getEventById, updateEventById, deleteEventById, registerForEvent };

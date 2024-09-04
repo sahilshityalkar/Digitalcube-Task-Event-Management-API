@@ -13,12 +13,7 @@ app.use(cors());
 //connection to MongoDB
 connectDB();
 
-// Define a sample route
-app.get('/', (req, res) => {
-    res.send('API is running...');
-  });
-
-// routes
+// Mounts the event routes under the '/api' prefix
 app.use('/api', eventRoutes);
 
 const PORT = process.env.PORT || 5000;
