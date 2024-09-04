@@ -1,7 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+
 const connectDB = require('./config/db')
+const eventRoutes = require('./routes/eventRoutes');
 
 const app = express();
 
@@ -15,6 +17,9 @@ connectDB();
 app.get('/', (req, res) => {
     res.send('API is running...');
   });
+
+// routes
+app.use('/api', eventRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
