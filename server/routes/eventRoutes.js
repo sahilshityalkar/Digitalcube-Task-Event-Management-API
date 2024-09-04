@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createEvent, getAllEvents, getEventById } = require('../controllers/eventController');
+const { createEvent, getAllEvents, getEventById, updateEventById } = require('../controllers/eventController');
 const upload = require('../middleware/upload');
 
 // POST /events - Create a new event with file upload
@@ -11,5 +11,8 @@ router.get('/events', getAllEvents);
 
 // GET /events/:id - Retrieve an event by ID
 router.get('/events/:id', getEventById);
+
+// PUT /events/:id - Update an event by ID
+router.put('/events/:id', upload.single('image'), updateEventById);
 
 module.exports = router;
