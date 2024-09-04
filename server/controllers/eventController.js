@@ -31,4 +31,14 @@ const createEvent = async (req, res) => {
     }
 };
 
-module.exports = { createEvent };
+// Controller function to retrieve all events
+const getAllEvents = async (req, res) => {
+    try {
+        const events = await Event.find();
+        res.status(200).json(events);
+    } catch (err) {
+        res.status(500).json({ error: 'An error occurred while retrieving events' });
+    }
+};
+
+module.exports = { createEvent, getAllEvents };
